@@ -21,7 +21,7 @@ function findChromium() {
   throw new Error('Chromium が見つかりません。CHROMIUM_PATH を指定してください');
 }
 
-export async function launchWithExtension({ grantHosts = [], viewport } = {}) {
+export async function launchWithExtension({ grantHosts = [], viewport, colorScheme } = {}) {
   const ext = mkdtempSync(join(tmpdir(), 'detour-ext-'));
   for (const name of ['manifest.json', 'src', 'icons']) cpSync(join(root, name), join(ext, name), { recursive: true });
   const manifest = JSON.parse(readFileSync(join(ext, 'manifest.json'), 'utf8'));
@@ -32,6 +32,7 @@ export async function launchWithExtension({ grantHosts = [], viewport } = {}) {
     executablePath: findChromium(),
     headless: true,
     viewport,
+    colorScheme,
     args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`, '--host-resolver-rules=MAP *.test 127.0.0.1'],
   });
   const sw = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));

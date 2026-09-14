@@ -1,9 +1,10 @@
-import { REASON_MIN, WAIT_MS } from './config.js';
+import { REASON_MIN, WAIT_MS, UNLOCK_MS } from './config.js';
 import { reasonLength } from './gate-logic.js';
 import { send } from './api.js';
 
 const $ = (id) => document.getElementById(id);
 const pad = (n) => String(n).padStart(2, '0');
+const RING = 2 * Math.PI * 108;
 
 let action;
 try {
@@ -12,36 +13,53 @@ try {
   action = null;
 }
 
-const TITLES = {
-  unlock: '一時解除する',
-  remove: `「${action?.pattern}」を削除する`,
-  setRedirect: `リダイレクト先を「${action?.url}」に変える`,
+const RECORDED = '理由は記録に残ります。';
+const COPY = {
+  unlock: { title: '一時解除まで', after: `実行すると ${UNLOCK_MS / 60000} 分だけ迂回が止まり、自動で戻ります。${RECORDED}` },
+  remove: { title: '削除まで', after: `実行すると「${action?.pattern}」を迂回しなくなります。${RECORDED}` },
+  setRedirect: { title: '変更まで', after: `実行するとリダイレクト先が「${action?.url}」に変わります。${RECORDED}` },
 };
-$('title').textContent = TITLES[action?.type] ?? '解除フロー';
+const copy = COPY[action?.type] ?? { title: '解除まで', after: '' };
+$('title').textContent = copy.title;
+$('after').textContent = copy.after;
+document.title = `Detour: ${copy.title}`;
+$('progress').style.strokeDasharray = RING;
 
 let remainingMs = WAIT_MS;
 let timer;
 
+function setNotice(text, isError = true) {
+  $('notice').textContent = text;
+  $('notice').className = isError ? 'error' : 'note';
+}
+
 function update() {
   const sec = Math.ceil(remainingMs / 1000);
-  $('timer').textContent = `${pad(Math.floor(sec / 60))}:${pad(sec % 60)}`;
+  const time = `${pad(Math.floor(sec / 60))}:${pad(sec % 60)}`;
+  $('timer').textContent = time;
+  $('progress').style.strokeDashoffset = RING * (remainingMs / WAIT_MS);
+
   const len = reasonLength($('reason').value);
+  const short = REASON_MIN - len;
   $('count').textContent = `${len} / ${REASON_MIN} 文字`;
-  $('complete').disabled = remainingMs > 0 || len < REASON_MIN;
+
+  const button = $('complete');
+  button.disabled = remainingMs > 0 || short > 0;
+  button.textContent = remainingMs > 0 ? `あと ${time}` : short > 0 ? `あと ${short} 文字` : '実行する';
 }
 
 async function tick() {
   if (document.visibilityState !== 'visible' || !document.hasFocus()) {
-    $('notice').textContent = '画面から離れています。このまま戻ると待ち時間はやり直しです。';
+    setNotice('画面から離れています。戻ると最初からです。');
     return;
   }
   try {
     const r = await send({ type: 'gateBeat' });
-    $('notice').textContent = r.reset ? '画面から離れたので、待ち時間をやり直しました。' : '';
+    setNotice(r.reset ? '画面から離れたので、最初からにしました。' : '');
     remainingMs = r.remainingMs;
     update();
   } catch (e) {
-    $('notice').textContent = e.message;
+    setNotice(e.message);
   }
 }
 
@@ -52,7 +70,7 @@ async function start() {
     update();
     timer = setInterval(tick, 1000);
   } catch (e) {
-    $('notice').textContent = e.message;
+    setNotice(e.message);
     $('reason').disabled = true;
   }
 }
@@ -64,10 +82,10 @@ $('complete').addEventListener('click', async () => {
   try {
     await send({ type: 'gateComplete', reason: $('reason').value });
     clearInterval(timer);
-    $('notice').textContent = '実行しました。';
+    setNotice('実行しました。', false);
     setTimeout(() => (location.href = 'options.html'), 1500);
   } catch (e) {
-    $('notice').textContent = e.message;
+    setNotice(e.message);
   }
 });
 
