@@ -1,19 +1,28 @@
+import { WAIT_MS } from './config.js';
 import { send, gateUrl, el } from './api.js';
 import { normalizeEntry, originsFor } from './match.js';
 
 const $ = (id) => document.getElementById(id);
-const fmtTime = (ms) => new Date(ms).toLocaleString('ja-JP');
+const fmtTime = (ms) => new Date(ms).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
+const waitMin = WAIT_MS / 60000;
 
 const describe = (a) =>
   ({ unlock: '一時解除', remove: `削除: ${a.pattern}`, setRedirect: `リダイレクト先を変更: ${a.url}` })[a.type] ?? a.type;
+
+$('unlock').textContent = `一時解除する（${waitMin} 分待つ）`;
+$('gate-note').textContent = `追加はすぐ反映されます。削除は解除フロー（${waitMin} 分待って理由を書く）を通ります。`;
+
+// ユーザー操作の中で呼ばないと許可ダイアログが出ないので、await より前に呼ぶ
+const requestAccess = (pattern) => chrome.permissions.request({ origins: originsFor(pattern) }).catch(() => false);
 
 async function render() {
   const st = await send({ type: 'getState' });
   const unlocked = st.unlockUntil > st.now;
 
   $('status').textContent = unlocked
-    ? `解除中（${new Date(st.unlockUntil).toLocaleTimeString('ja-JP')} にロックへ戻ります）`
+    ? `解除中・${new Date(st.unlockUntil).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} に戻ります`
     : 'ロック中';
+  $('status').classList.toggle('unlocked', unlocked);
   $('unlock').hidden = unlocked;
   $('lock').hidden = !unlocked;
 
@@ -25,11 +34,11 @@ async function render() {
         grant.addEventListener('click', () => requestAccess(pattern).then(render));
         actions.append(grant);
       }
-      actions.append(el('a', { href: gateUrl({ type: 'remove', pattern }), textContent: '削除する' }));
+      actions.append(el('a', { className: 'quiet', href: gateUrl({ type: 'remove', pattern }), textContent: '削除' }));
       return el(
         'li',
         {},
-        el('span', {}, pattern, el('span', { className: 'badge', textContent: granted ? '迂回' : 'ブロックのみ' })),
+        el('span', {}, pattern, el('span', { className: granted ? 'badge redirect' : 'badge', textContent: granted ? '迂回' : 'ブロックのみ' })),
         actions,
       );
     }),
@@ -37,18 +46,16 @@ async function render() {
 
   const input = $('redirect');
   if (document.activeElement !== input) input.value = st.redirectUrl;
-  $('redirect-button').textContent = st.redirectUrl ? '変更（解除フローへ）' : '設定';
+  $('redirect-button').textContent = st.redirectUrl ? '変更する' : '設定';
 
   $('log').replaceChildren(
     ...st.log.map((l) =>
       el('li', {}, el('time', { textContent: fmtTime(l.at) }), el('strong', { textContent: describe(l.action) }), el('div', { textContent: l.reason })),
     ),
   );
+  $('log-empty').hidden = st.log.length > 0;
   return st;
 }
-
-// ユーザー操作の中で呼ばないと許可ダイアログが出ないので、await より前に呼ぶ
-const requestAccess = (pattern) => chrome.permissions.request({ origins: originsFor(pattern) }).catch(() => false);
 
 $('add-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();
@@ -62,7 +69,7 @@ $('add-form').addEventListener('submit', async (ev) => {
   try {
     await send({ type: 'add', pattern: entry.pattern });
     $('pattern').value = '';
-    if (!(await granted)) $('add-error').textContent = 'サイトへのアクセスが許可されなかったので、迂回ではなくブロックになります。';
+    if (!(await granted)) $('add-error').textContent = 'アクセスが許可されなかったので、迂回ではなくブロックになります。';
     await render();
   } catch (e) {
     $('add-error').textContent = e.message;
