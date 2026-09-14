@@ -26,7 +26,11 @@
 | `youtube.com` | `youtube.com` とそのサブドメインすべて |
 | `youtube.com/shorts/*` | パスの前方一致。`*` は任意の文字列 |
 
-通常のページ遷移は `declarativeNetRequest` で迂回し、SPA の `pushState` や戻る/進むのキャッシュ復元は `webNavigation` で拾う。iframe での埋め込みはブロックだけする。
+通常のページ遷移は `declarativeNetRequest` で迂回し、SPA の `pushState` や戻る/進むのキャッシュ復元はタブの URL 変化で拾う。iframe での埋め込みはブロックだけする。
+
+### 権限
+
+全サイトへのアクセスは要求しない。サイトを登録するときに、そのサイト（とサブドメイン）の分だけアクセス許可を求める。迂回（redirect）には対象サイトへのアクセス許可が要るので、許可のないサイトは迂回の代わりにブロックする（ブロックは許可なしで効く）。許可をあとから取り消しても素通しにはならない。
 
 ## 入れ方
 
@@ -40,7 +44,7 @@
 
 macOS で Chrome ウェブストア外の拡張機能を強制インストールできるのは、MDM 管理下か Chrome Enterprise Core 登録済みの端末だけ。個人の Mac ではウェブストアに**限定公開**して、そのIDをポリシーで強制インストールする。
 
-1. `scripts/pack.sh` で `dist/detour-<version>.zip` を作り、Chrome ウェブストアのデベロッパーダッシュボードに「限定公開（Unlisted）」で提出する
+1. `scripts/pack.sh` で `dist/detour-<version>.zip` を、`node scripts/store-assets.mjs` で `dist/store/` にスクリーンショットとプロモタイルを作り、Chrome ウェブストアのデベロッパーダッシュボードに「限定公開（Unlisted）」で提出する。記入内容は `store/listing.md`、プライバシーポリシーは `docs/privacy.md`
 2. 審査が通ったら拡張機能IDで構成プロファイルを作る
    ```sh
    node scripts/gen-mobileconfig.mjs <拡張機能ID>
