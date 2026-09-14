@@ -34,7 +34,33 @@
 2. 拡張機能のアイコンを押して設定画面を開き、リダイレクト先とサイトを登録する
 3. 拡張機能の詳細で「シークレット モードでの実行を許可」をオンにする
 
-この入れ方だと `chrome://extensions` からオフにできる。外せなくするには Chrome のポリシー `ExtensionInstallForcelist` で強制インストールする（Chrome ウェブストアへの限定公開が必要）。強制インストールした拡張機能のページでは、既定のポリシーで DevTools も開けない。
+この入れ方だと `chrome://extensions` からオフにできる。
+
+## 外せなくする
+
+macOS で Chrome ウェブストア外の拡張機能を強制インストールできるのは、MDM 管理下か Chrome Enterprise Core 登録済みの端末だけ。個人の Mac ではウェブストアに**限定公開**して、そのIDをポリシーで強制インストールする。
+
+1. `scripts/pack.sh` で `dist/detour-<version>.zip` を作り、Chrome ウェブストアのデベロッパーダッシュボードに「限定公開（Unlisted）」で提出する
+2. 審査が通ったら拡張機能IDで構成プロファイルを作る
+   ```sh
+   node scripts/gen-mobileconfig.mjs <拡張機能ID>
+   # 削除パスワードを付けるなら、パスワードを決める人が入力する
+   read -s DETOUR_REMOVAL_PASSWORD && export DETOUR_REMOVAL_PASSWORD && node scripts/gen-mobileconfig.mjs <拡張機能ID>
+   ```
+3. `dist/detour.mobileconfig` をダブルクリックし、システム設定 → 一般 → デバイス管理 でインストールする
+4. Chrome を再起動し、`chrome://policy` で各ポリシーが OK になっていること、`chrome://extensions` で Detour のスイッチがグレーアウトしていることを確かめる
+5. 読み込み済みの開発版 Detour は削除する（同じ機能が2つ動くため）
+
+入るポリシー:
+
+| ポリシー | 効果 |
+|---|---|
+| `ExtensionInstallForcelist` | Detour をオフにも削除もできなくする。強制インストールした拡張機能のページでは、既定で DevTools も開けない |
+| `IncognitoModeAvailability: 1` | シークレットモードを使えなくする（強制インストールはシークレットに効かないため） |
+| `BrowserGuestModeEnabled: false` | ゲストモードを使えなくする |
+| `BrowserAddPersonEnabled: false` | プロファイルを増やせなくする（既存のプロファイルは残るので先に消しておく） |
+
+この構成でも残る抜け道: 管理者権限でのプロファイル削除、Chrome 以外のブラウザ（Safari・Arc・Brave など）、スマートフォン。
 
 ## テスト
 
