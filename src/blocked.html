@@ -2,13 +2,20 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <title>迂回しました</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detour: 迂回しました</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="blocked.css">
 </head>
 <body>
-  <main>
-    <h1>このサイトは迂回中です</h1>
-    <p>開こうとした手を、いったん止めました。</p>
+  <main class="blocked">
+    <svg class="mark" width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="28" fill="none" stroke-width="4"/>
+      <path d="M22 44 V30 a6 6 0 0 1 6-6 h12 M36 18 l7 6 -7 6" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <p class="eyebrow">DETOUR</p>
+    <h1>いったん、ここで止めました</h1>
+    <p class="lead">開こうとしたサイトは迂回の対象です。どうしても必要なら、ツールバーの Detour から解除フローを通してください。</p>
   </main>
 </body>
 </html>
