@@ -15,7 +15,10 @@ try {
 
 const RECORDED = '理由は記録に残ります。';
 const COPY = {
-  unlock: { title: '一時解除まで', after: `実行すると ${UNLOCK_MS / 60000} 分だけ迂回が止まり、自動で戻ります。${RECORDED}` },
+  unlock: {
+    title: '一時解除まで',
+    after: `実行すると ${UNLOCK_MS / 60000} 分だけ迂回が止まり、自動で戻ります。戻るときに開いているタブも迂回します。${RECORDED}`,
+  },
   remove: { title: '削除まで', after: `実行すると「${action?.pattern}」を迂回しなくなります。${RECORDED}` },
   setRedirect: { title: '変更まで', after: `実行するとリダイレクト先が「${action?.url}」に変わります。${RECORDED}` },
 };
@@ -50,12 +53,12 @@ function update() {
 
 async function tick() {
   if (document.visibilityState !== 'visible' || !document.hasFocus()) {
-    setNotice('画面から離れています。戻ると最初からです。');
+    setNotice('画面から離れています。');
     return;
   }
   try {
     const r = await send({ type: 'gateBeat' });
-    setNotice(r.reset ? '画面から離れたので、最初からにしました。' : '');
+    setNotice(r.reset ? '画面から離れたので、最初から数え直しています。' : '');
     remainingMs = r.remainingMs;
     update();
   } catch (e) {

@@ -8,7 +8,7 @@ const LOG_MAX = 500;
 
 const COMPLETE_ERRORS = {
   'no-gate': '解除フローが始まっていません',
-  interrupted: '画面から離れたため、やり直しになりました',
+  interrupted: '画面から離れたため、最初から数え直しています',
   waiting: 'まだ待ち時間が残っています',
   'reason-short': `理由は ${REASON_MIN} 文字以上書いてください`,
 };

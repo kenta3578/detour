@@ -5,15 +5,16 @@
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 14px;
+  gap: 10px;
+  padding: 8px 18px;
   border-radius: var(--radius-pill);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
+  white-space: nowrap;
   background: var(--accent-soft);
   color: var(--accent-ink);
 }
-.pill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.pill::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
 .pill.unlocked { background: var(--warn-soft); color: var(--warn-ink); }
 
 .settings section { margin-top: 40px; }

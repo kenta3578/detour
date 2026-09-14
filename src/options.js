@@ -10,7 +10,7 @@ const describe = (a) =>
   ({ unlock: '一時解除', remove: `削除: ${a.pattern}`, setRedirect: `リダイレクト先を変更: ${a.url}` })[a.type] ?? a.type;
 
 $('unlock').textContent = `一時解除する（${waitMin} 分待つ）`;
-$('gate-note').textContent = `追加はすぐ反映されます。削除は解除フロー（${waitMin} 分待って理由を書く）を通ります。`;
+$('gate-note').textContent = `追加はすぐ反映されます。削除は解除フロー（${waitMin} 分の待機と理由の記入）を通ります。`;
 
 // ユーザー操作の中で呼ばないと許可ダイアログが出ないので、await より前に呼ぶ
 const requestAccess = (pattern) => chrome.permissions.request({ origins: originsFor(pattern) }).catch(() => false);
