@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Detour",
+  "version": "0.1.0",
+  "description": "登録したサイトを別の URL へ迂回させる。解除には待ち時間と理由の入力を求める。",
+  "permissions": ["declarativeNetRequest", "storage", "alarms", "webNavigation"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_title": "Detour"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/blocked.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>Detour の設定</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <h1>Detour</h1>
+    <p class="status" id="status"></p>
+    <button id="unlock" hidden>一時解除する（解除フローへ）</button>
+    <button id="lock" hidden>今すぐロックに戻す</button>
+
+    <h2>迂回させるサイト</h2>
+    <form id="add-form">
+      <input id="pattern" placeholder="youtube.com または youtube.com/shorts/*" autocomplete="off">
+      <button>追加</button>
+    </form>
+    <p class="note">追加はすぐ反映されます。削除は解除フローを通ります。</p>
+    <p class="error" id="add-error"></p>
+    <ul id="patterns"></ul>
+
+    <h2>リダイレクト先</h2>
+    <form id="redirect-form">
+      <input id="redirect" placeholder="https://..." autocomplete="off">
+      <button id="redirect-button">設定</button>
+    </form>
+    <p class="note">未設定のあいだは拡張機能内のページに迂回します。一度設定したあとの変更は解除フローを通ります。</p>
+    <p class="error" id="redirect-error"></p>
+
+    <h2>解除の記録</h2>
+    <ul class="log" id="log"></ul>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>
