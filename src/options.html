@@ -2,36 +2,49 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Detour の設定</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <main>
-    <h1>Detour</h1>
-    <p class="status" id="status"></p>
-    <button id="unlock" hidden>一時解除する（解除フローへ）</button>
-    <button id="lock" hidden>今すぐロックに戻す</button>
+  <main class="settings">
+    <header class="head">
+      <h1>Detour</h1>
+      <div class="state">
+        <span class="pill" id="status" role="status"></span>
+        <button id="unlock" hidden></button>
+        <button id="lock" hidden>今すぐ戻す</button>
+      </div>
+    </header>
 
-    <h2>迂回させるサイト</h2>
-    <form id="add-form">
-      <input id="pattern" placeholder="youtube.com または youtube.com/shorts/*" autocomplete="off">
-      <button>追加</button>
-    </form>
-    <p class="note">追加はすぐ反映されます。削除は解除フローを通ります。</p>
-    <p class="note">迂回するには、そのサイトへのアクセス許可が要ります。許可がないサイトは迂回せずブロックします。</p>
-    <p class="error" id="add-error"></p>
-    <ul id="patterns"></ul>
+    <section>
+      <h2>迂回させるサイト</h2>
+      <form id="add-form" class="inline">
+        <input id="pattern" placeholder="例: youtube.com" autocomplete="off" aria-label="迂回させるサイト">
+        <button class="primary">追加</button>
+      </form>
+      <p class="error" id="add-error" role="status"></p>
+      <ul class="list" id="patterns"></ul>
+      <p class="note" id="gate-note"></p>
+      <p class="note">迂回にはそのサイトへのアクセス許可が要ります。許可がないサイトはブロックだけします。</p>
+    </section>
 
-    <h2>リダイレクト先</h2>
-    <form id="redirect-form">
-      <input id="redirect" placeholder="https://..." autocomplete="off">
-      <button id="redirect-button">設定</button>
-    </form>
-    <p class="note">未設定のあいだは拡張機能内のページに迂回します。一度設定したあとの変更は解除フローを通ります。</p>
-    <p class="error" id="redirect-error"></p>
+    <section>
+      <h2>リダイレクト先</h2>
+      <form id="redirect-form" class="inline">
+        <input id="redirect" placeholder="https://..." autocomplete="off" aria-label="リダイレクト先">
+        <button id="redirect-button">設定</button>
+      </form>
+      <p class="error" id="redirect-error" role="status"></p>
+      <p class="note">未設定のあいだは Detour の案内ページに迂回します。一度設定したあとの変更は解除フローを通ります。</p>
+    </section>
 
-    <h2>解除の記録</h2>
-    <ul class="log" id="log"></ul>
+    <section>
+      <h2>解除の記録</h2>
+      <ul class="log" id="log"></ul>
+      <p class="note" id="log-empty">まだありません。</p>
+    </section>
   </main>
   <script type="module" src="options.js"></script>
 </body>

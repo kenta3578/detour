@@ -1,0 +1,6 @@
+.blocked { text-align: center; padding-top: 12vh; }
+.blocked h1 { font-size: 24px; font-weight: 500; margin: 12px 0 16px; }
+.blocked .lead { color: var(--muted); margin: 0 auto; max-width: 420px; }
+.blocked .mark { display: block; margin: 0 auto 8px; }
+.blocked .mark circle { stroke: var(--track); }
+.blocked .mark path { stroke: var(--accent); }

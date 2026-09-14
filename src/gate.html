@@ -2,22 +2,34 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Detour の解除フロー</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="gate.css">
 </head>
 <body>
-  <main>
-    <h1 id="title">解除フロー</h1>
-    <p class="note">このタブを前面に出したまま待ってください。別のタブやウィンドウに移ると、待ち時間は最初からやり直しになります。</p>
-    <div class="timer" id="timer">--:--</div>
-    <p class="error" id="notice"></p>
-    <h2>なぜ今それが必要ですか</h2>
-    <textarea id="reason"></textarea>
-    <p class="note" id="count"></p>
-    <p>
-      <button id="complete" disabled>実行する</button>
-      <a href="options.html" id="cancel">やめる</a>
-    </p>
+  <main class="gate">
+    <h1 class="eyebrow" id="title">解除まで</h1>
+    <div class="ring">
+      <svg width="240" height="240" viewBox="0 0 240 240" aria-hidden="true">
+        <circle class="track" cx="120" cy="120" r="108" fill="none" stroke-width="6"/>
+        <circle class="progress" id="progress" cx="120" cy="120" r="108" fill="none" stroke-width="6" stroke-linecap="round"/>
+      </svg>
+      <div class="time" id="timer">--:--</div>
+    </div>
+    <p class="hint">このタブを見たまま待ちます。離れると最初からです。</p>
+    <p class="error" id="notice" role="status"></p>
+
+    <div class="field">
+      <label for="reason">なぜ今それが必要ですか</label>
+      <textarea id="reason"></textarea>
+    </div>
+    <div class="meta">
+      <span id="count"></span>
+      <a class="quiet" href="options.html" id="cancel">やめる</a>
+    </div>
+    <button class="primary" id="complete" disabled>実行する</button>
+    <p class="after" id="after"></p>
   </main>
   <script type="module" src="gate-page.js"></script>
 </body>
