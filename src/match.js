@@ -25,13 +25,24 @@ export function normalizeEntry(input) {
   return { kind: 'path', host, path, pattern: host + path };
 }
 
-export function buildRules(patterns, redirect) {
+/** パターンのホスト（サブドメイン含む）へのアクセス許可として求める origin */
+export function originsFor(pattern) {
+  const e = normalizeEntry(pattern);
+  return e ? [`*://${e.host}/*`, `*://*.${e.host}/*`] : [];
+}
+
+/**
+ * redirect はリクエスト先へのアクセス許可が要る。許可のないパターンは、許可なしで効く block にする。
+ * 許可を取り消されても素通しにならないようにするため。
+ */
+export function buildRules(patterns, redirect, granted = new Set()) {
   return patterns.flatMap((pattern, i) => {
     const e = normalizeEntry(pattern);
     if (!e) return [];
     const cond = e.kind === 'domain' ? { requestDomains: [e.host] } : { urlFilter: `||${e.host}${e.path}` };
+    const mainAction = granted.has(pattern) ? { type: 'redirect', redirect } : { type: 'block' };
     return [
-      { id: i * 2 + 1, priority: 1, action: { type: 'redirect', redirect }, condition: { ...cond, resourceTypes: ['main_frame'] } },
+      { id: i * 2 + 1, priority: 1, action: mainAction, condition: { ...cond, resourceTypes: ['main_frame'] } },
       // 埋め込み（iframe）はリダイレクト先を小窓に出しても意味がないので止めるだけ
       { id: i * 2 + 2, priority: 1, action: { type: 'block' }, condition: { ...cond, resourceTypes: ['sub_frame'] } },
     ];

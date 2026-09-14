@@ -1,5 +1,5 @@
 import { WAIT_MS, UNLOCK_MS, REASON_MIN, BEAT_GAP_MS } from './config.js';
-import { normalizeEntry, buildRules, matchesUrl, matchesAny, validateRedirect } from './match.js';
+import { normalizeEntry, buildRules, matchesUrl, matchesAny, validateRedirect, originsFor } from './match.js';
 import { startGate, beat, remaining, checkComplete } from './gate-logic.js';
 
 const CFG = { waitMs: WAIT_MS, gapMs: BEAT_GAP_MS, reasonMin: REASON_MIN };
@@ -17,6 +17,11 @@ const load = () => chrome.storage.local.get({ patterns: [], redirectUrl: '', unl
 const isUnlocked = (s, now = Date.now()) => s.unlockUntil > now;
 const redirectHref = (s) => s.redirectUrl || chrome.runtime.getURL(BLOCKED_PAGE);
 
+async function grantedPatterns(patterns) {
+  const flags = await Promise.all(patterns.map((p) => chrome.permissions.contains({ origins: originsFor(p) })));
+  return new Set(patterns.filter((_, i) => flags[i]));
+}
+
 // ---- ルールの適用 ----
 
 async function apply() {
@@ -26,7 +31,7 @@ async function apply() {
   const redirect = s.redirectUrl ? { url: s.redirectUrl } : { extensionPath: BLOCKED_PAGE };
   await chrome.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: current.map((r) => r.id),
-    addRules: unlocked ? [] : buildRules(s.patterns, redirect),
+    addRules: unlocked ? [] : buildRules(s.patterns, redirect, await grantedPatterns(s.patterns)),
   });
   if (unlocked) {
     await chrome.alarms.create('relock', { when: s.unlockUntil });
@@ -40,29 +45,30 @@ async function apply() {
 let queue = Promise.resolve();
 const scheduleApply = () => (queue = queue.then(apply).catch((e) => console.error('[detour] apply', e)));
 
-/** ロックした時点で開いているタブも迂回させる */
+/** ロックした時点で開いているタブも迂回させる。tab.url が見えるのはアクセス許可のあるサイトだけ */
 async function sweepTabs(s) {
-  const tabs = await chrome.tabs.query({ url: ['http://*/*', 'https://*/*'] });
+  const tabs = await chrome.tabs.query({});
   await Promise.all(
     tabs.filter((t) => t.url && matchesAny(s.patterns, t.url)).map((t) => chrome.tabs.update(t.id, { url: redirectHref(s) })),
   );
 }
 
-/** DNR はリクエストを伴わない遷移（SPA の pushState・戻る/進むのキャッシュ）を拾えないので JS で補う */
-async function onNavigated(d) {
-  if (d.frameId !== 0) return;
+/** DNR はリクエストを伴わない遷移（SPA の pushState・戻る/進むのキャッシュ）を拾えないので、タブの URL 変化で補う */
+async function onTabUpdated(tabId, info) {
+  if (!info.url) return;
   const s = await load();
-  if (!isUnlocked(s) && matchesAny(s.patterns, d.url)) await chrome.tabs.update(d.tabId, { url: redirectHref(s) });
+  if (!isUnlocked(s) && matchesAny(s.patterns, info.url)) await chrome.tabs.update(tabId, { url: redirectHref(s) });
 }
 
 chrome.runtime.onInstalled.addListener(scheduleApply);
 chrome.runtime.onStartup.addListener(scheduleApply);
 chrome.storage.onChanged.addListener((_, area) => area === 'local' && scheduleApply());
+chrome.permissions.onAdded.addListener(scheduleApply);
+chrome.permissions.onRemoved.addListener(scheduleApply);
 chrome.alarms.onAlarm.addListener(async (a) => {
   if (a.name === 'relock') await chrome.storage.local.set({ unlockUntil: 0 });
 });
-chrome.webNavigation.onHistoryStateUpdated.addListener(onNavigated);
-chrome.webNavigation.onCommitted.addListener(onNavigated);
+chrome.tabs.onUpdated.addListener(onTabUpdated);
 chrome.action.onClicked.addListener(() => chrome.runtime.openOptionsPage());
 
 // ---- 設定の変更 ----
@@ -87,6 +93,14 @@ async function perform(s, action, reason, now) {
   if (action.type === 'remove') next.patterns = s.patterns.filter((p) => p !== action.pattern);
   if (action.type === 'setRedirect') next.redirectUrl = action.url;
   await chrome.storage.local.set(next);
+
+  // 同じホストのパターンが残っていなければ、そのサイトへのアクセス許可も返す
+  if (action.type === 'remove') {
+    const host = normalizeEntry(action.pattern)?.host;
+    if (host && !next.patterns.some((p) => normalizeEntry(p)?.host === host)) {
+      await chrome.permissions.remove({ origins: originsFor(action.pattern) }).catch(() => {});
+    }
+  }
 }
 
 async function handle(msg) {
@@ -95,14 +109,16 @@ async function handle(msg) {
   const { gate } = await chrome.storage.session.get('gate');
 
   switch (msg?.type) {
-    case 'getState':
+    case 'getState': {
+      const granted = await grantedPatterns(s.patterns);
       return {
-        patterns: s.patterns,
+        patterns: s.patterns.map((p) => ({ pattern: p, granted: granted.has(p) })),
         redirectUrl: s.redirectUrl,
         unlockUntil: s.unlockUntil,
         log: s.log.slice(-50).reverse(),
         now,
       };
+    }
 
     // 強める操作はすぐ反映する
     case 'add': {

@@ -1,4 +1,5 @@
 import { send, gateUrl, el } from './api.js';
+import { normalizeEntry, originsFor } from './match.js';
 
 const $ = (id) => document.getElementById(id);
 const fmtTime = (ms) => new Date(ms).toLocaleString('ja-JP');
@@ -17,9 +18,21 @@ async function render() {
   $('lock').hidden = !unlocked;
 
   $('patterns').replaceChildren(
-    ...st.patterns.map((p) =>
-      el('li', {}, el('span', { textContent: p }), el('a', { href: gateUrl({ type: 'remove', pattern: p }), textContent: '削除する' })),
-    ),
+    ...st.patterns.map(({ pattern, granted }) => {
+      const actions = el('span', { className: 'actions' });
+      if (!granted) {
+        const grant = el('button', { textContent: '迂回を許可', type: 'button' });
+        grant.addEventListener('click', () => requestAccess(pattern).then(render));
+        actions.append(grant);
+      }
+      actions.append(el('a', { href: gateUrl({ type: 'remove', pattern }), textContent: '削除する' }));
+      return el(
+        'li',
+        {},
+        el('span', {}, pattern, el('span', { className: 'badge', textContent: granted ? '迂回' : 'ブロックのみ' })),
+        actions,
+      );
+    }),
   );
 
   const input = $('redirect');
@@ -34,12 +47,22 @@ async function render() {
   return st;
 }
 
+// ユーザー操作の中で呼ばないと許可ダイアログが出ないので、await より前に呼ぶ
+const requestAccess = (pattern) => chrome.permissions.request({ origins: originsFor(pattern) }).catch(() => false);
+
 $('add-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   $('add-error').textContent = '';
+  const entry = normalizeEntry($('pattern').value);
+  if (!entry) {
+    $('add-error').textContent = 'ドメインか URL パターンとして読めません';
+    return;
+  }
+  const granted = requestAccess(entry.pattern);
   try {
-    await send({ type: 'add', pattern: $('pattern').value });
+    await send({ type: 'add', pattern: entry.pattern });
     $('pattern').value = '';
+    if (!(await granted)) $('add-error').textContent = 'サイトへのアクセスが許可されなかったので、迂回ではなくブロックになります。';
     await render();
   } catch (e) {
     $('add-error').textContent = e.message;
