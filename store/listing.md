@@ -54,4 +54,6 @@
 
 ### プライバシーポリシーの URL
 
-`docs/privacy.md` を公開した URL を入れる。
+https://kenta3578.github.io/detour/privacy
+
+`docs/privacy.md` を GitHub Pages（main ブランチの `/docs`）で公開している。
