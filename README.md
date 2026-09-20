@@ -3,6 +3,8 @@
 登録したドメイン・URL を開こうとすると、指定した URL へ迂回させる Chrome 拡張（Manifest V3）。
 ブロックを強める操作はすぐ反映し、弱める操作には手間をかけさせる。
 
+何がどう効いているかは [docs/how-it-works.md](docs/how-it-works.md)。
+
 ## 挙動
 
 | 操作 | 反映 |
